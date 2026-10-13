@@ -54,9 +54,17 @@ x,Revenue,Cost
 ## API
 
 ### `new Chart(canvas, options)`
-Creates a chart on a `<canvas>` element. The options are `showLine` (default
-`false`) and the fixed axis ranges `xRange` and `yRange`, each given as
-`[start, end]`.
+Creates a chart on a `<canvas>` element. The options are `width` and `height`
+in CSS pixels (default 800 × 450), `showLine` (default `false`), the axis labels
+`xLabel` and `yLabel`, and the fixed axis ranges `xRange` and `yRange`, each
+given as `[start, end]`. Without a fixed range, an axis fits the data. The
+chart sizes the canvas's bitmap to match its displayed size, including on
+high-density screens.
+
+`showAxes`, `showAxisLabels` and `showLegend` (all default `true`) turn those
+parts on and off. Small charts also drop them when they don't fit: axis labels
+below 240 × 200, the legend below 160 × 120 or when it would take over a quarter
+of the height, and axes below 120 × 100, leaving only the data.
 
 `setSeries(series, colors)` replaces the chart's data, with one CSS color per
 series in the same order. `setOptions(options)` merges new options into the
@@ -73,9 +81,15 @@ const series = new Series("Revenue", PointSet.fromArrays([0, 1, 2], [1.2, 1.5, 1
 ```
 
 ### `PointSet`
-Holds points sorted by x, stored as `Float32Array`s. `PointSet.fromArrays(xs, ys)`
-copies existing arrays into a new set. To load points individually, create a
-set with a fixed capacity, push the points in any order, and call `sort()`.
+Holds points stored as `Float32Array`s, in the order they were added.
+`PointSet.fromArrays(xs, ys)` copies existing arrays into a new set. To load
+points individually, create a set with a fixed capacity and push the points in
+any order.
+
+`sort()` sorts the points by x, then y, in place without allocating. It is a
+no-op if they are already sorted, and `sorted` reports whether they are. A
+chart sorts a series only to draw it as a line; scatter plots are drawn in
+any order.
 
 ```js
 const points = new PointSet(1000);
@@ -85,7 +99,8 @@ points.sort();
 ```
 
 `push` throws if the set is full. `xs` and `ys` return the stored coordinates
-as read-only views, and `start` and `end` return the first and last points.
+as read-only views, and `start` and `end` return the first and last points in
+sort order, without sorting.
 
 Coordinates are stored with about 7 significant digits of precision, which is
 insufficient for large x values such as Unix timestamps.
@@ -123,7 +138,7 @@ and a malformed file for testing how invalid input is handled.
 | `src/series.js` | Both | `Series`, which passes data from the backend to the frontend |
 | `src/point-set.js` | Backend | `PointSet`, which stores each series' points |
 | `src/data.js` | Backend | `parseCSV(text)` and `randomData(options)`, both returning `Series[]` |
-| `index.html`, `style.css`, `demo/main.js` | Frontend | Demo page using the library |
+| `index.html`, `style.css`, `demo/` | Frontend | Demo page using the library, with a 7-11 theme toggle |
 | `data/` | Backend | Sample CSVs |
 | `test/` | Backend | Unit tests for the library |
 | `docs/decisions/` | Leads | Architecture Decision Records (MADR) |
